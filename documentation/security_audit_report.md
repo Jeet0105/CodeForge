@@ -12,3 +12,5 @@
 - 2026-09-28: Initial security checklist drafted by Harsh Abhichandani.
 
 - 2026-09-28: Code plagiarism tokenizer and similarity threshold added by Harsh Abhichandani.
+
+- 2026-10-03: Security audit conducted on auth endpoints by Kenil Dhola.
