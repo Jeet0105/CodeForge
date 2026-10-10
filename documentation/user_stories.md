@@ -17,3 +17,5 @@
 - 2026-08-16: User stories formulated and prioritized by Kenil Dhola.
 
 - 2026-08-16: Auth flows and role specifications added by Kenil Dhola.
+
+- 2026-10-10: Onboarding guides verified by Kenil Dhola.
