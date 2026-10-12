@@ -18,3 +18,5 @@
 - 2026-08-17: Execution engine NFRs and Judge0 spec drafted by Harshvardhan Sarvaiya.
 
 - 2026-08-17: Sandbox isolation constraints detailed by Harshvardhan Sarvaiya.
+
+- 2026-10-12: Operational runbook finalized by Harshvardhan Sarvaiya.
