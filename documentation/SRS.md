@@ -56,3 +56,5 @@ This document outlines the specifications for CodeForge, a competitive programmi
 - 2026-08-15: Initial SRS draft created by Jeet Maheshwari.
 
 - 2026-08-18: Problem management specifications reviewed by Vivek Savaliya.
+
+- 2026-10-12: Community guidelines integrated by Harsh Abhichandani.
