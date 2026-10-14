@@ -23,3 +23,5 @@ graph LR
 - 2026-08-19: Architecture specifications drafted by Harsh Abhichandani.
 
 - 2026-08-19: Forum and plagiarism flow documented by Harsh Abhichandani.
+
+- 2026-10-14: Architecture diagram and tech stack verified by Jeet Maheshwari.
