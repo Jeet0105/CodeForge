@@ -11,3 +11,5 @@
 - 2026-08-21: Initial test plan drafted by Hardik.
 
 - 2026-08-21: Test coverage matrices and QA scope outlined by Hardik.
+
+- 2026-10-14: Final QA smoke testing sign-off approved by Hardik.
