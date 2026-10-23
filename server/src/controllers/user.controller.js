@@ -195,8 +195,8 @@ export const updateUserProfile = async (req, res) => {
       // Use unsigned upload to avoid timestamp/clock-skew issues
       const result = await cloudinary.uploader.unsigned_upload(
         dataUri,
-        process.env.CLOUDINARY_UPLOAD_PRESET || "kodex_avatars",
-        { folder: "kodex/avatars" }
+        process.env.CLOUDINARY_UPLOAD_PRESET || "codeforge_avatars",
+        { folder: "codeforge/avatars" }
       );
       user.avatarUrl = result.secure_url;
     } else if (avatarUrl !== undefined) {

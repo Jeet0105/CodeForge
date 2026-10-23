@@ -39,6 +39,7 @@
 - [Infrastructure, Sandbox & DevOps](#-infrastructure-sandbox--devops)
 - [Quality Attributes & Non-Functional Requirements](#-quality-attributes--non-functional-requirements)
 - [Testing, Verification & QA Sign-off](#-testing-verification--qa-sign-off)
+- [Swagger API Documentation](#-swagger-api-documentation)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
@@ -342,6 +343,28 @@ CodeForge has passed rigorous end-to-end verification and quality assurance:
   * **Submit Code Average Latency**: `1.8 s` (Passing SLA `< 2.0 s`)
   * **Leaderboard Recalculation**: `< 80 ms`
 * **Sign-Off Verdict**: **APPROVED FOR PRODUCTION MVP LAUNCH (v1.0.0)**.
+
+---
+
+## 📑 Swagger API Documentation
+
+CodeForge provides interactive OpenAPI 3.0.3 documentation powered by **Swagger UI**:
+
+* **Interactive Web Interface**: [`http://localhost:5000/api-docs`](http://localhost:5000/api-docs)
+* **Raw OpenAPI Specification (JSON)**: [`http://localhost:5000/api-docs.json`](http://localhost:5000/api-docs.json)
+* **Static Spec File**: [`documentation/swagger.json`](file:///e:/codeforge/CodeForge/documentation/swagger.json)
+
+### Available Modules & Endpoints (All 28 Routes Documented)
+* **Auth (`/api/v1/auth`)**: Candidate registration, credential login, Google OAuth SSO, session logout, and OTP password recovery.
+* **Problems (`/api/v1/problems`)**: Catalog discovery, metadata/difficulty aggregations, and CRUD problem authoring with visible/hidden test cases.
+* **Submissions (`/api/v1/submissions`)**: Dual execution engine (`run-code` fast testing loop vs. `submit-code` persistent evaluation) and submission history.
+* **Users (`/api/v1/users`)**: Dashboard statistics, user rank percentiles, cached leaderboard, profile/avatar uploads, and password management.
+* **Discussions (`/api/v1/discussions`)**: Threaded discussion forum, community upvoting/downvoting, and comment moderation.
+* **Admin (`/api/v1/admin`)**: Platform administrative telemetry, user role promotion/demotion, ban suspension, and submission audits.
+* **System (`/health`)**: Microservice health check.
+
+> [!TIP]
+> **Authentication in Swagger UI**: Click the **Authorize 🔓** button at the top right of Swagger UI and enter your JWT Bearer token (`Bearer <token>`) to test authenticated and role-restricted endpoints directly in your browser.
 
 ---
 

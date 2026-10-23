@@ -1,0 +1,2732 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CodeForge API Documentation",
+    "version": "1.0.0",
+    "description": "\n**CodeForge** is an enterprise-grade competitive programming practice platform and automated online judge.\n\n### Core Capabilities:\n* **Authentication & RBAC**: JWT and Google OAuth authentication with role guards (Candidate, Problem Setter, Admin).\n* **Dual Execution Engine**:\n  * `Run Code`: Fast, stateless execution against visible test cases (avg 1.1s).\n  * `Submit Code`: Strict execution against hidden test cases via Judge0 CE sandboxing with persistent verdicts (avg 1.8s).\n* **Problem Management**: Full problem authoring lifecycle with visible/hidden test cases and solution wrapper drivers.\n* **Community & Discussions**: Threaded discussion forum with voting and comment moderation.\n* **Leaderboards & Analytics**: Cached ranking recalculation (< 80ms) and Recharts telemetry.\n\n### Authentication:\nProtected routes require a valid JSON Web Token (JWT). You can provide it either via:\n1. **Bearer Token Header**: `Authorization: Bearer <your_jwt_token>`\n2. **HTTP-only Cookie**: `token=<your_jwt_token>`\n    ",
+    "contact": {
+      "name": "CodeForge Engineering Team",
+      "email": "support@codeforge.com"
+    },
+    "license": {
+      "name": "ISC",
+      "url": "https://opensource.org/licenses/ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.codeforge.com",
+      "description": "Production Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "Health check and system diagnostics"
+    },
+    {
+      "name": "Auth",
+      "description": "User registration, authentication, Google OAuth, and password recovery"
+    },
+    {
+      "name": "Problems",
+      "description": "Problem discovery, metadata, and problem management (Admin/Setter)"
+    },
+    {
+      "name": "Submissions",
+      "description": "Dual code execution engine (Run/Submit) and submission history"
+    },
+    {
+      "name": "Users",
+      "description": "User profiles, dashboard metrics, and cached leaderboard"
+    },
+    {
+      "name": "Discussions",
+      "description": "Threaded discussion boards, voting, and comment moderation"
+    },
+    {
+      "name": "Admin",
+      "description": "Platform administration, user management, and submission audits"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your Bearer token in the format: Bearer <token>"
+      },
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "token",
+        "description": "Session token stored in HTTP-only cookie"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Error description"
+          },
+          "status": {
+            "type": "string",
+            "example": "error"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e4f"
+          },
+          "username": {
+            "type": "string",
+            "example": "hardik_coder"
+          },
+          "email": {
+            "type": "string",
+            "example": "hardik@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "admin"
+            ],
+            "example": "user"
+          },
+          "totalPoints": {
+            "type": "number",
+            "example": 450
+          },
+          "solvedProblems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "660c1d2e8b9f1a001c2d3e50"
+            ]
+          },
+          "avatarUrl": {
+            "type": "string",
+            "example": "https://res.cloudinary.com/demo/image/upload/avatar.png"
+          },
+          "isGoogleUser": {
+            "type": "boolean",
+            "example": false
+          },
+          "isBanned": {
+            "type": "boolean",
+            "example": false
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TestCase": {
+        "type": "object",
+        "required": [
+          "input",
+          "output"
+        ],
+        "properties": {
+          "input": {
+            "type": "string",
+            "example": "[2,7,11,15]\n9"
+          },
+          "output": {
+            "type": "string",
+            "example": "[0,1]"
+          }
+        }
+      },
+      "ProblemExample": {
+        "type": "object",
+        "required": [
+          "input",
+          "output"
+        ],
+        "properties": {
+          "input": {
+            "type": "string",
+            "example": "nums = [2,7,11,15], target = 9"
+          },
+          "output": {
+            "type": "string",
+            "example": "[0,1]"
+          },
+          "explanation": {
+            "type": "string",
+            "example": "Because nums[0] + nums[1] == 9, we return [0, 1]."
+          }
+        }
+      },
+      "DriverCode": {
+        "type": "object",
+        "required": [
+          "language",
+          "judge0LanguageId",
+          "starterCode",
+          "solutionWrapper",
+          "functionName"
+        ],
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "cpp",
+              "java",
+              "python",
+              "javascript"
+            ],
+            "example": "javascript"
+          },
+          "judge0LanguageId": {
+            "type": "number",
+            "example": 63
+          },
+          "starterCode": {
+            "type": "string",
+            "example": "function twoSum(nums, target) {\n    // Write your code here\n};"
+          },
+          "solutionWrapper": {
+            "type": "string",
+            "example": "{{USER_CODE}}\nconst fs = require('fs');\nconst [nums, target] = JSON.parse(fs.readFileSync(0, 'utf-8'));\nconsole.log(JSON.stringify(twoSum(nums, target)));"
+          },
+          "functionName": {
+            "type": "string",
+            "example": "twoSum"
+          },
+          "timeLimit": {
+            "type": "number",
+            "example": 2
+          },
+          "memoryLimit": {
+            "type": "number",
+            "example": 128000
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e50"
+          },
+          "title": {
+            "type": "string",
+            "example": "Two Sum"
+          },
+          "description": {
+            "type": "string",
+            "example": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target."
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "example": "easy"
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Array",
+              "Hash Table"
+            ]
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "2 <= nums.length <= 10^4",
+              "-10^9 <= nums[i] <= 10^9",
+              "-10^9 <= target <= 10^9"
+            ]
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemExample"
+            }
+          },
+          "hints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "A really brute force way would be to search for all possible pairs."
+            ]
+          },
+          "editorial": {
+            "type": "string",
+            "example": "Use a hash map to store complements."
+          },
+          "visibleTestcases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestCase"
+            }
+          },
+          "points": {
+            "type": "number",
+            "example": 100
+          },
+          "totalSubmissions": {
+            "type": "number",
+            "example": 1240
+          },
+          "acceptedSubmissions": {
+            "type": "number",
+            "example": 980
+          },
+          "isPublished": {
+            "type": "boolean",
+            "example": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "example": false
+          },
+          "createdBy": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e4f"
+          }
+        }
+      },
+      "SubmissionResultItem": {
+        "type": "object",
+        "properties": {
+          "testCase": {
+            "type": "number",
+            "example": 1
+          },
+          "passed": {
+            "type": "boolean",
+            "example": true
+          },
+          "stdout": {
+            "type": "string",
+            "example": "[0,1]"
+          },
+          "expected_output": {
+            "type": "string",
+            "example": "[0,1]"
+          },
+          "status": {
+            "type": "string",
+            "example": "Accepted"
+          },
+          "time": {
+            "type": "string",
+            "example": "0.04"
+          },
+          "memory": {
+            "type": "number",
+            "example": 1420
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e99"
+          },
+          "user": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e4f"
+          },
+          "problem": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e50"
+          },
+          "language": {
+            "type": "string",
+            "example": "javascript"
+          },
+          "code": {
+            "type": "string",
+            "example": "function twoSum(nums, target) { ... }"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "Accepted",
+              "Wrong Answer",
+              "Time Limit Exceeded",
+              "Memory Limit Exceeded",
+              "Compilation Error",
+              "Runtime Error"
+            ],
+            "example": "Accepted"
+          },
+          "runtime": {
+            "type": "number",
+            "example": 0.08
+          },
+          "memory": {
+            "type": "number",
+            "example": 15400
+          },
+          "passedTestCases": {
+            "type": "number",
+            "example": 15
+          },
+          "totalTestCases": {
+            "type": "number",
+            "example": 15
+          },
+          "testCaseResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionResultItem"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Discussion": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e88"
+          },
+          "title": {
+            "type": "string",
+            "example": "Optimized O(N) Hash Map approach in Python"
+          },
+          "content": {
+            "type": "string",
+            "example": "Here is an explanation of the two-pass vs one-pass hash map approach..."
+          },
+          "problemId": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e50"
+          },
+          "author": {
+            "$ref": "#/components/schemas/User"
+          },
+          "upvotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "downvotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "votesCount": {
+            "type": "number",
+            "example": 14
+          },
+          "commentCount": {
+            "type": "number",
+            "example": 5
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e77"
+          },
+          "content": {
+            "type": "string",
+            "example": "Great explanation, helped me solve edge cases!"
+          },
+          "discussionId": {
+            "type": "string",
+            "example": "660c1d2e8b9f1a001c2d3e88"
+          },
+          "author": {
+            "$ref": "#/components/schemas/User"
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "upvotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "downvotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "votesCount": {
+            "type": "number",
+            "example": 3
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "number",
+            "example": 1
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string",
+                "example": "jeet_lead"
+              },
+              "avatarUrl": {
+                "type": "string"
+              }
+            }
+          },
+          "totalPoints": {
+            "type": "number",
+            "example": 1850
+          },
+          "problemsSolved": {
+            "type": "number",
+            "example": 42
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "API Health Check",
+        "description": "Returns the health and operational status of the CodeForge backend service.",
+        "responses": {
+          "200": {
+            "description": "API is healthy and operational",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API is running 🚀"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register new candidate account",
+        "description": "Creates a new user profile with password hashed via 10 salt rounds of bcrypt.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "alex_coder"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "alex@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "Password123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User registered successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or username/email already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log in with email and password",
+        "description": "Authenticates credentials, issues a signed JWT, and sets an HTTP-only secure cookie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "alex@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "Password123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "headers": {
+              "Set-Cookie": {
+                "description": "HTTP-only auth token cookie",
+                "schema": {
+                  "type": "string",
+                  "example": "token=eyJhbGciOiJIUzI1Ni...; Path=/; HttpOnly; SameSite=Strict"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    },
+                    "token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials or missing fields"
+          },
+          "403": {
+            "description": "Account suspended or banned"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/google": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Google OAuth SSO Authentication",
+        "description": "Authenticates user verified via Firebase Google Auth and returns user profile + session token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "google_dev"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "dev@gmail.com"
+                  },
+                  "profilePictureUrl": {
+                    "type": "string",
+                    "example": "https://lh3.googleusercontent.com/a/photo.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Google OAuth sign-in successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Google login successful"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account suspended"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log out current session",
+        "description": "Clears the authentication HTTP-only session cookie.",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Logout successful"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request password reset OTP",
+        "description": "Generates a 6-digit cryptographic OTP and dispatches it via Nodemailer (valid for 2 minutes).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP sent to email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "OTP sent to email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Account uses Google SSO or missing email"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify password reset OTP",
+        "description": "Validates the 6-digit OTP against the hashed token and expiry stored on the user record.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "otp"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "849201"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "OTP verified successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired OTP"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password with verified OTP",
+        "description": "Updates the user's password using the verified OTP and clears temporary OTP state.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "otp",
+                  "newPassword"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "849201"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "NewSecurePassword456!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Password reset successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired OTP, or weak password"
+          }
+        }
+      }
+    },
+    "/api/v1/problems/metadata": {
+      "get": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Get Problem Catalog Metadata",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Returns summary counts by difficulty (Easy, Medium, Hard) and unique topic tags.",
+        "responses": {
+          "200": {
+            "description": "Problem metadata retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalProblems": {
+                      "type": "number",
+                      "example": 120
+                    },
+                    "difficulties": {
+                      "type": "object",
+                      "properties": {
+                        "easy": {
+                          "type": "number",
+                          "example": 45
+                        },
+                        "medium": {
+                          "type": "number",
+                          "example": 55
+                        },
+                        "hard": {
+                          "type": "number",
+                          "example": 20
+                        }
+                      }
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "Array",
+                        "Dynamic Programming",
+                        "Graph",
+                        "String",
+                        "Tree"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/problems": {
+      "get": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Get paginated problem list",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Retrieves published problems with optional filtering by difficulty, topic, or search term.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "easy",
+                "medium",
+                "hard"
+              ]
+            },
+            "description": "Filter by difficulty"
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by tag/topic"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Keyword search in title"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of problems with pagination metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Problem"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "example": 120
+                    },
+                    "page": {
+                      "type": "number",
+                      "example": 1
+                    },
+                    "totalPages": {
+                      "type": "number",
+                      "example": 6
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Create problem (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Creates a new algorithmic problem including starter code and solution wrappers for all 4 languages.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "difficulty",
+                  "visibleTestcases",
+                  "hiddenTestcases",
+                  "driverCode"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Valid Palindrome"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "A phrase is a palindrome if..."
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "easy",
+                      "medium",
+                      "hard"
+                    ],
+                    "example": "easy"
+                  },
+                  "topics": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "Two Pointers",
+                      "String"
+                    ]
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "1 <= s.length <= 2 * 10^5"
+                    ]
+                  },
+                  "examples": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ProblemExample"
+                    }
+                  },
+                  "hints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "editorial": {
+                    "type": "string"
+                  },
+                  "visibleTestcases": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TestCase"
+                    }
+                  },
+                  "hiddenTestcases": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TestCase"
+                    }
+                  },
+                  "driverCode": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DriverCode"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Problem created successfully"
+          },
+          "400": {
+            "description": "Missing required fields or invalid driver configuration"
+          },
+          "403": {
+            "description": "Unauthorized - Admin role required"
+          }
+        }
+      }
+    },
+    "/api/v1/problems/{id}": {
+      "get": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Get problem details by ID",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Retrieves complete problem description, examples, starter code templates, and visible test cases.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Problem ObjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Problem details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Update problem by ID (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Updates problem content, constraints, test cases, or driver code.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Problem ObjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Problem"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Problem updated successfully"
+          },
+          "403": {
+            "description": "Admin authorization required"
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Soft delete problem (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Flags problem as isDeleted=true. Problem must be unpublished first.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Problem ObjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Problem soft-deleted successfully"
+          },
+          "400": {
+            "description": "Must unpublish problem before deletion"
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      }
+    },
+    "/api/v1/problems/{id}/publish": {
+      "patch": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Publish problem to catalog (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Problem published successfully"
+          },
+          "400": {
+            "description": "Validation failure (missing drivers, examples, or hidden test cases)"
+          },
+          "403": {
+            "description": "Admin authorization required"
+          }
+        }
+      }
+    },
+    "/api/v1/problems/{id}/unpublish": {
+      "patch": {
+        "tags": [
+          "Problems"
+        ],
+        "summary": "Unpublish problem from catalog (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Problem unpublished successfully"
+          },
+          "403": {
+            "description": "Admin authorization required"
+          }
+        }
+      }
+    },
+    "/api/v1/submissions/run-code": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Execute code against visible test cases (Fast Loop)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Executes user solution via Judge0 against visible sample test cases with zero database writes (avg 1.1s).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "problemId",
+                  "language",
+                  "code"
+                ],
+                "properties": {
+                  "problemId": {
+                    "type": "string",
+                    "example": "660c1d2e8b9f1a001c2d3e50"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "cpp",
+                      "java",
+                      "python",
+                      "javascript"
+                    ],
+                    "example": "javascript"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const comp = target - nums[i];\n    if (map.has(comp)) return [map.get(comp), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Execution completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "All test cases passed"
+                    },
+                    "allPassed": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SubmissionResultItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters or unsupported language"
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      }
+    },
+    "/api/v1/submissions/submit-code": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Submit code against all hidden test cases (Evaluation Loop)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Formally evaluates user solution against all hidden and edge test cases, calculates verdict, persists submission record, and updates leaderboard scores.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "problemId",
+                  "language",
+                  "code"
+                ],
+                "properties": {
+                  "problemId": {
+                    "type": "string",
+                    "example": "660c1d2e8b9f1a001c2d3e50"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "cpp",
+                      "java",
+                      "python",
+                      "javascript"
+                    ],
+                    "example": "javascript"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "function twoSum(nums, target) { ... }"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solution evaluated and recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Submission evaluated successfully"
+                    },
+                    "submission": {
+                      "$ref": "#/components/schemas/Submission"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      }
+    },
+    "/api/v1/submissions/my-submissions": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Get current user submission history",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Returns all past submissions created by the authenticated user.",
+        "responses": {
+          "200": {
+            "description": "User submission history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Submission"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/submissions/problem/{problemId}": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Get user submissions for a specific problem",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "problemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submissions for problem retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Submission"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/submissions/{id}": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Get submission details by ID",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Submission not found"
+          }
+        }
+      }
+    },
+    "/api/v1/users/dashboard-stats": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get candidate dashboard statistics",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Returns solved counts categorized by difficulty, total points, and recent activity breakdown.",
+        "responses": {
+          "200": {
+            "description": "Dashboard stats retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalSolved": {
+                      "type": "number",
+                      "example": 42
+                    },
+                    "easySolved": {
+                      "type": "number",
+                      "example": 25
+                    },
+                    "mediumSolved": {
+                      "type": "number",
+                      "example": 14
+                    },
+                    "hardSolved": {
+                      "type": "number",
+                      "example": 3
+                    },
+                    "totalPoints": {
+                      "type": "number",
+                      "example": 1450
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/rank": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user rank",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Returns user's global leaderboard position and percentile.",
+        "responses": {
+          "200": {
+            "description": "Rank retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rank": {
+                      "type": "number",
+                      "example": 7
+                    },
+                    "totalUsers": {
+                      "type": "number",
+                      "example": 512
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/leaderboard": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get cached global leaderboard",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Fetches paginated rankings precomputed from indexed cache (< 80ms response).",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard rankings retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "leaderboard": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LeaderboardEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "example": 512
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/profile": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user profile and avatar",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Supports multipart/form-data for uploading avatar to Cloudinary CDN.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatarUrl": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Avatar image file"
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatarUrl": {
+                    "type": "string",
+                    "example": "https://res.cloudinary.com/demo/image.png"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          }
+        }
+      }
+    },
+    "/api/v1/users/change-password": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Change account password",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "example": "OldPassword123!"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "NewPassword789!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed successfully"
+          },
+          "400": {
+            "description": "Incorrect current password or weak new password"
+          }
+        }
+      }
+    },
+    "/api/v1/users/leaderboard/refresh": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Force leaderboard cache recalculation (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard refreshed successfully"
+          },
+          "403": {
+            "description": "Admin authorization required"
+          }
+        }
+      }
+    },
+    "/api/v1/discussions": {
+      "get": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Get problem discussions",
+        "description": "Retrieves discussion threads, optionally filtered by problemId.",
+        "parameters": [
+          {
+            "name": "problemId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by problem ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discussions retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Discussion"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Create discussion thread",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "content",
+                  "problemId"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Intuition behind sliding window"
+                  },
+                  "content": {
+                    "type": "string",
+                    "example": "When expanding the window..."
+                  },
+                  "problemId": {
+                    "type": "string",
+                    "example": "660c1d2e8b9f1a001c2d3e50"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Discussion created successfully"
+          },
+          "400": {
+            "description": "Missing required fields"
+          }
+        }
+      }
+    },
+    "/api/v1/discussions/{id}": {
+      "get": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Get discussion thread by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discussion retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Discussion"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Discussion not found"
+          }
+        }
+      }
+    },
+    "/api/v1/discussions/{id}/vote": {
+      "post": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Upvote or downvote discussion",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "voteType"
+                ],
+                "properties": {
+                  "voteType": {
+                    "type": "string",
+                    "enum": [
+                      "upvote",
+                      "downvote"
+                    ],
+                    "example": "upvote"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote recorded"
+          }
+        }
+      }
+    },
+    "/api/v1/discussions/{id}/comments": {
+      "get": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Get comments for discussion thread",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Post comment on discussion",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": "Thanks for sharing!"
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment created"
+          }
+        }
+      }
+    },
+    "/api/v1/discussions/{id}/comments/{commentId}/vote": {
+      "post": {
+        "tags": [
+          "Discussions"
+        ],
+        "summary": "Vote on comment",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "voteType"
+                ],
+                "properties": {
+                  "voteType": {
+                    "type": "string",
+                    "enum": [
+                      "upvote",
+                      "downvote"
+                    ],
+                    "example": "upvote"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote registered on comment"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/dashboard": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get admin platform overview metrics",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "description": "Returns platform-wide metrics including total users, total problems, total submissions, and acceptance rate.",
+        "responses": {
+          "200": {
+            "description": "Admin dashboard stats retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalUsers": {
+                      "type": "number",
+                      "example": 512
+                    },
+                    "totalProblems": {
+                      "type": "number",
+                      "example": 120
+                    },
+                    "totalSubmissions": {
+                      "type": "number",
+                      "example": 8430
+                    },
+                    "acceptanceRate": {
+                      "type": "string",
+                      "example": "64.2%"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin role required"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get paginated user management list",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "admin"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User list retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "example": 512
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get user details by ID",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/role": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Promote or demote user role",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "role"
+                ],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "admin"
+                    ],
+                    "example": "admin"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User role updated successfully"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/ban": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Suspend or restore user account",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "isBanned"
+                ],
+                "properties": {
+                  "isBanned": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User ban status updated"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/submissions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Audit and filter all platform submissions",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "verdict",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "problemId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submissions retrieved for audit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "submissions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "example": 8430
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/submissions/{id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Audit specific submission by ID",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Submission not found"
+          }
+        }
+      }
+    }
+  }
+}

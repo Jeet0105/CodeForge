@@ -15,6 +15,8 @@ import userRoutes from "./src/routes/user.routes.js";
 import discussionRoutes from "./src/routes/discussion.routes.js";
 import cookieParser from "cookie-parser";
 import { refreshLeaderboard } from "./src/controllers/user.controller.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./src/config/swagger.js";
 
 dotenv.config();
 
@@ -24,7 +26,11 @@ const app = express();
    Security Middlewares
 ======================== */
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -70,6 +76,30 @@ app.get("/health", (req, res) => {
     status: "success",
     message: "API is running 🚀",
   });
+});
+
+/* Swagger API Documentation */
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "CodeForge API Documentation",
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 25px 0 }
+      .swagger-ui .info .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #2563eb; }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+    },
+  })
+);
+
+app.get("/api-docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
 });
 
 app.use("/api/v1/auth", authRoutes);
