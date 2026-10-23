@@ -558,8 +558,8 @@ timeline
 | **Harshvardhan Sarvaiya** | **Judge0 Infra & Sandbox** | Judge0 Docker Compose stack, Redis queue & isolated worker orchestration, execution limit enforcement. |
 | **Vivek Savaliya** | **Problems & Submissions** | Problem creation workflows, visible/hidden test case models, Run Code & Submit APIs, verdict aggregation. |
 | **Harsh Abhichandani** | **Discussions & Plagiarism** | Threaded discussion forums, comment voting & moderation, code plagiarism detection module. |
-| **Prit Patel** | **Vite Client, Redux & Auth UI** | React 19 + Vite setup, Redux Toolkit state architecture, route guards, login/registration UI, Google OAuth. |
-| **Shawast** | **Monaco Editor & Workspace** | Monaco code editor integration, run console & output diff viewer, workspace & setter studio UI. |
+| **Prit Tilala** | **Vite Client, Redux & Auth UI** | React 19 + Vite setup, Redux Toolkit state architecture, route guards, login/registration UI, Google OAuth. |
+| **Shashwat** | **Monaco Editor & Workspace** | Monaco code editor integration, run console & output diff viewer, workspace & setter studio UI. |
 | **Hardik** | **Dashboards, Leaderboard & QA** | Recharts analytics dashboards, precomputed leaderboard cache, Jest unit tests, Postman API contracts & security audit. |
 
 ---
