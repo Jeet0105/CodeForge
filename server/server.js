@@ -50,6 +50,12 @@ app.use(
 /* Body parsers */
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use((req, res, next) => {
+  if (!req.body || typeof req.body !== "object") {
+    req.body = {};
+  }
+  next();
+});
 app.use(cookieParser());
 /* NoSQL injection prevention */
 // app.use(
@@ -114,6 +120,18 @@ app.use((req, res) => {
   res.status(404).json({
     status: "error",
     message: "Route not found",
+  });
+});
+
+/* Global error handler */
+app.use((err, req, res, next) => {
+  console.error("Unhandled Error:", err);
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ status: "error", message: "Invalid JSON format" });
+  }
+  res.status(err.status || 500).json({
+    status: "error",
+    message: err.message || "Internal server error",
   });
 });
 

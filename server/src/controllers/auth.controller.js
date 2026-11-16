@@ -3,18 +3,25 @@ import crypto from "crypto";
 import User from "../models/user.model.js";
 import sendEmail from "../utils/sendEmail.js";
 
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 3 * 24 * 60 * 60 * 1000,
+});
+
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password } = req.body || {};
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password || typeof email !== "string" || typeof password !== "string") {
       return res.status(400).json({
         message: "Username, email and password are required",
       });
     }
 
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: email.toLowerCase().trim() }, { username: String(username).trim() }],
     });
 
     if (existingUser) {
@@ -24,7 +31,7 @@ export const register = async (req, res) => {
     }
 
     const newUser = new User({
-      username: username.trim(),
+      username: String(username).trim(),
       email: email.toLowerCase().trim(),
       password,
     });
@@ -51,9 +58,9 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (!email || !password) {
+    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
@@ -69,7 +76,12 @@ export const login = async (req, res) => {
 
     /* Track last login */
     user.lastLoginAt = new Date();
-    await user.save();
+    await user.save({ validateBeforeSave: false });
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET environment variable is missing!");
+      return res.status(500).json({ message: "Internal server configuration error" });
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -78,12 +90,7 @@ export const login = async (req, res) => {
     );
 
     res.status(200)
-      .cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 3 * 24 * 60 * 60 * 1000,
-      })
+      .cookie("token", token, getCookieOptions())
       .json({
         message: "Login successful",
         user,
@@ -95,24 +102,25 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
+  const { maxAge, ...clearOptions } = getCookieOptions();
   res.status(200)
-    .clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    })
+    .clearCookie("token", clearOptions)
     .json({ message: "Logout successful" });
 };
 
 export const googleLogin = async (req, res) => {
   try {
-    const { username, email, profilePictureUrl } = req.body;
+    const { username, email, profilePictureUrl } = req.body || {};
 
-    let user = await User.findOne({ email });
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ message: "Valid email is required" });
+    }
+
+    let user = await User.findOne({ email: email.toLowerCase().trim() });
 
     if (!user) {
       user = new User({
-        username: username.trim(),
+        username: (username || email.split("@")[0]).trim(),
         email: email.toLowerCase().trim(),
         avatarUrl: profilePictureUrl,
         isGoogleUser: true,
@@ -126,7 +134,12 @@ export const googleLogin = async (req, res) => {
 
     /* Track last login */
     user.lastLoginAt = new Date();
-    await user.save();
+    await user.save({ validateBeforeSave: false });
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET environment variable is missing!");
+      return res.status(500).json({ message: "Internal server configuration error" });
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -136,12 +149,7 @@ export const googleLogin = async (req, res) => {
 
     return res
       .status(200)
-      .cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 3 * 24 * 60 * 60 * 1000,
-      })
+      .cookie("token", token, getCookieOptions())
       .json({
         message: "Google login successful",
         user,
@@ -161,9 +169,9 @@ export const googleLogin = async (req, res) => {
 // @access  Public
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email } = req.body || {};
 
-    if (!email) {
+    if (!email || typeof email !== "string") {
       return res.status(400).json({ message: "Email is required" });
     }
 
@@ -218,14 +226,14 @@ export const forgotPassword = async (req, res) => {
 // @access  Public
 export const verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp } = req.body || {};
 
-    if (!email || !otp) {
+    if (!email || !otp || typeof email !== "string") {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
     // Hash the entered OTP
-    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const hashedOtp = crypto.createHash("sha256").update(String(otp)).digest("hex");
 
     const user = await User.findOne({
       email: email.toLowerCase().trim(),
@@ -249,9 +257,9 @@ export const verifyOTP = async (req, res) => {
 // @access  Public
 export const resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, otp, newPassword } = req.body || {};
 
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp || !newPassword || typeof email !== "string" || typeof newPassword !== "string") {
       return res.status(400).json({ message: "Email, OTP and new password are required" });
     }
 
@@ -260,7 +268,7 @@ export const resetPassword = async (req, res) => {
     }
 
     // Double check OTP
-    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const hashedOtp = crypto.createHash("sha256").update(String(otp)).digest("hex");
 
     const user = await User.findOne({
       email: email.toLowerCase().trim(),
