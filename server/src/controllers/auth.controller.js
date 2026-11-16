@@ -94,6 +94,7 @@ export const login = async (req, res) => {
       .json({
         message: "Login successful",
         user,
+        token,
       });
   } catch (error) {
     console.error("Login Error:", error);
@@ -153,6 +154,7 @@ export const googleLogin = async (req, res) => {
       .json({
         message: "Google login successful",
         user,
+        token,
       });
   } catch (error) {
     console.error("Google Login Error:", error);

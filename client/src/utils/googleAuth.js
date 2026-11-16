@@ -23,6 +23,10 @@ export async function handleGoogleAuth({
       profilePictureUrl: photoURL,
     });
 
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
+    }
+
     // Step 3: Store YOUR backend's user shape in Redux (not Firebase's)
     dispatch(setUser(res.data.user));
 

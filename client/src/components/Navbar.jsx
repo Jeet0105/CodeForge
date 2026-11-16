@@ -3,6 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import { clearUser } from '../redux/userSlice'
 import { auth } from '../firebase'
 import { signOut } from 'firebase/auth'
+import api from '../utils/api'
 
 export default function Navbar() {
   const { user } = useSelector((state) => state.user)
@@ -10,6 +11,12 @@ export default function Navbar() {
   const dispatch = useDispatch()
 
   const handleLogout = async () => {
+    try {
+      await api.post("/api/v1/auth/logout")
+    } catch {
+      // ignore
+    }
+    localStorage.removeItem("token")
     await signOut(auth)       // sign out from Firebase
     dispatch(clearUser())     // clear user from Redux store
     navigate('/')             // redirect to home

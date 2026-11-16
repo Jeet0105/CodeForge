@@ -24,6 +24,10 @@ function Login() {
     try {
       const res = await api.post("/api/v1/auth/login", data)
 
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token)
+      }
+
       toast.success(res.data.message || "Login successful")
 
       // Update Redux state
