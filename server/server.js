@@ -31,10 +31,35 @@ app.use(
     contentSecurityPolicy: false,
   })
 );
+const rawFrontendUrls = process.env.FRONTEND_URL || "http://localhost:5173";
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://code-forge-olive-xi.vercel.app",
+  ...rawFrontendUrls.split(",").map((url) => url.trim().replace(/\/+$/, "")),
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      const isAllowed =
+        allowedOrigins.includes(normalizedOrigin) ||
+        process.env.NODE_ENV !== "production";
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
+    exposedHeaders: ["Set-Cookie"],
   })
 );
 
